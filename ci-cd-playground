@@ -1,0 +1,130 @@
+name: Daily Activity
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate activity
+        run: |
+          # Pattern matrix for "NZAOO" repeated to fill 52 weeks (full year)
+          # 0 = background (1 commit), 1 = foreground (6 commits)
+          # Pattern: N(5) Z(5) A(5) O(5) O(5) = 25 columns + 4 spacing = 29 columns
+          # Repeat pattern twice with spacing to fill year: 29 + 2 + 29 = 60 columns (covers 52 weeks)
+          
+          declare -a BASE_PATTERN=(
+            "1 0 0 0 1 0 1 1 1 1 1 0 1 1 1 1 1 0 1 1 1 1 1 0 1 1 1 1 1"
+            "1 1 0 0 1 0 0 0 0 0 1 0 1 0 0 0 1 0 1 0 0 0 1 0 1 0 0 0 1"
+            "1 0 1 0 1 0 0 0 0 1 0 0 1 0 0 0 1 0 1 0 0 0 1 0 1 0 0 0 1"
+            "1 0 0 1 1 0 0 0 1 0 0 0 1 1 1 1 1 0 1 0 0 0 1 0 1 0 0 0 1"
+            "1 0 0 0 1 0 0 1 0 0 0 0 1 0 0 0 1 0 1 0 0 0 1 0 1 0 0 0 1"
+            "1 0 0 0 1 0 1 0 0 0 0 0 1 0 0 0 1 0 1 0 0 0 1 0 1 0 0 0 1"
+            "1 0 0 0 1 0 1 1 1 1 1 0 1 0 0 0 1 0 1 1 1 1 1 0 1 1 1 1 1"
+          )
+          
+          # Build full year pattern (52 weeks)
+          declare -a PATTERN
+          for row in {0..6}; do
+            ROW_DATA="${BASE_PATTERN[$row]} 0 0 ${BASE_PATTERN[$row]}"
+            PATTERN[$row]="$ROW_DATA"
+          done
+          
+          # Get current date info
+          YEAR=$(date +%Y)
+          DOW=$(date +%u)
+          if [ $DOW -eq 7 ]; then DOW=0; fi
+          
+          # Calculate week number from January 1st of current year
+          JAN_1="${YEAR}-01-01"
+          JAN_1_EPOCH=$(date -d "$JAN_1" +%s)
+          
+          # Find the Sunday before or on Jan 1st (contribution graph starts on Sunday)
+          JAN_1_DOW=$(date -d "$JAN_1" +%u)
+          if [ $JAN_1_DOW -eq 7 ]; then JAN_1_DOW=0; fi
+          DAYS_TO_SUNDAY=$(( (JAN_1_DOW + 6) % 7 ))
+          START_SUNDAY_EPOCH=$(( JAN_1_EPOCH - (DAYS_TO_SUNDAY * 86400) ))
+          
+          # Calculate current position
+          TODAY_EPOCH=$(date +%s)
+          DAYS_FROM_START=$(( ($TODAY_EPOCH - $START_SUNDAY_EPOCH) / 86400 ))
+          COL=$(( $DAYS_FROM_START / 7 ))
+          
+          # Limit to 52 weeks
+          if [ $COL -ge 60 ]; then
+            COL=59
+          fi
+          if [ $COL -lt 0 ]; then
+            COL=0
+          fi
+          
+          # Get pattern value for today
+          ROW_DATA=(${PATTERN[$DOW]})
+          PATTERN_VALUE=${ROW_DATA[$COL]}
+          
+          # Default to background if outside pattern
+          if [ -z "$PATTERN_VALUE" ]; then
+            PATTERN_VALUE=0
+          fi
+          
+          # Set commit count: 6 for pattern, 1 for background
+          if [ "$PATTERN_VALUE" -eq 1 ]; then
+            COMMITS=6
+          else
+            COMMITS=1
+          fi
+          
+          echo "Date: $(date +%Y-%m-%d), Day: $DOW, Column: $COL, Pattern: $PATTERN_VALUE, Commits: $COMMITS"
+          
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          # Create activity file if not exists
+          mkdir -p .github/activity
+          ACTIVITY_FILE=".github/activity/log.txt"
+          
+          # Generate commits
+          for i in $(seq 1 $COMMITS); do
+            echo "$(date -Iseconds) - Activity entry $i" >> "$ACTIVITY_FILE"
+            git add "$ACTIVITY_FILE"
+            
+            # Natural commit messages
+            MESSAGES=(
+              "Update dependencies"
+              "Fix minor issue"
+              "Refactor code"
+              "Update docs"
+              "Clean up files"
+              "Minor improvements"
+              "Optimize logic"
+              "Update config"
+              "Bug fix"
+              "Code cleanup"
+              "Update tests"
+              "Improve performance"
+              "Adjust settings"
+              "Code review"
+              "Format code"
+            )
+            
+            MSG_INDEX=$((RANDOM % ${#MESSAGES[@]}))
+            git commit -m "${MESSAGES[$MSG_INDEX]}" --quiet
+            
+            sleep 2
+          done
+          
+          # Push all commits at once
+          git push --quiet
+          
+          echo "Successfully created $COMMITS commits"
