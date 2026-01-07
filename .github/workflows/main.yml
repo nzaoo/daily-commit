@@ -79,7 +79,7 @@ jobs:
           
           # Set commit count: 6 for pattern, 1 for background
           if [ "$PATTERN_VALUE" -eq 1 ]; then
-            COMMITS=6
+            COMMITS=
           else
             COMMITS=1
           fi
@@ -125,6 +125,7 @@ jobs:
           done
           
           # Push all commits at once
+          git pull --rebase origin main
           git push --quiet
           
           echo "Successfully created $COMMITS commits"
