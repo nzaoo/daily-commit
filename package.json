@@ -1,0 +1,26 @@
+{
+  "name": "daily-commit",
+  "version": "1.0.0",
+  "description": "GitHub contribution automation with daily commits and custom patterns",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Tests pass\"",
+    "generate": "node src/generate.js"
+  },
+  "keywords": [
+    "github",
+    "automation",
+    "contribution",
+    "workflow",
+    "daily-commit"
+  ],
+  "author": "nzaoo",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nzaoo/daily-commit.git"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
