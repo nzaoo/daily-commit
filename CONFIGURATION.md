@@ -34,6 +34,7 @@ Each number represents a column in the contribution graph.
 ## Git Configuration
 
 The workflow uses your GitHub account for commits:
+
 - `git config user.name`: Your GitHub username
 - `git config user.email`: Your noreply email
 

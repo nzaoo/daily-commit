@@ -21,6 +21,7 @@ Thank you for your interest in contributing to the Daily Commit project!
 ## Issues
 
 Before opening an issue, please:
+
 - Check if the issue already exists
 - Provide a clear description
 - Include steps to reproduce (if it's a bug)
