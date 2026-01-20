@@ -20,7 +20,7 @@ jobs:
         run: |
           # Generate random number of commits between 1-15 per day
           COMMITS=$(( $RANDOM % 15 + 1 ))
-          
+
           echo "Date: $(date +%Y-%m-%d), Random Commits: $COMMITS"
 
           # Configure git
